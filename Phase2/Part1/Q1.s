@@ -1,6 +1,6 @@
 #Question 1: Raeesah Iram
 #Translate the following C++ code into assembly: 
-#include <iostream> 
+# #include <iostream> 
 #using namespace std; 
 #void summation_3(int A[],int& sum){      
 #    for(int i=0; i<5;i++){      
