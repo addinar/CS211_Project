@@ -1,3 +1,6 @@
+# Phrase 3
+# Addina Rahaman, Saanavi Goyal, Raeesah Iram
+
 .data
 # Prices for products
 water_price: .word 2
