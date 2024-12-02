@@ -1,4 +1,4 @@
-# Phrase 3
+# Phase 3
 # Addina Rahaman, Saanavi Goyal, Raeesah Iram
 
 .data
@@ -8,153 +8,125 @@ snacks_price: .word 4
 sandwich_price: .word 7
 meal_price: .word 10
 
-# Choice for products
-water_choice: .word 1
-snacks_choice: .word 2
-sandwich_choice: .word 3
-meal_choice: .word 4
-exit_choice: .word -1
-
 # Messages
 enterMoney: .asciiz "Enter the amount of money: "
-chooseItem: .asciiz "\nChoose an item (1: Water, 2: Snacks, 3: Sandwiches, 4: Meals, -1 to exit): "
+chooseItem: .asciiz "\nChoose an item (1: Water $2, 2: Snacks $4, 3: Sandwiches $7, 4: Meals $10, -1 to exit): "
 minBalance: .asciiz "\nNot enough balance. Please choose another option.\n"
 balance: .asciiz "\nRemaining balance: $"
 exitMessage: .asciiz "\nThank you for using the vending machine! Remaining balance: $"
 
+# Selected item messages
+selectedWater: .asciiz "\nYou selected Water."
+selectedSnacks: .asciiz "\nYou selected Snacks."
+selectedSandwich: .asciiz "\nYou selected Sandwiches"
+selectedMeal: .asciiz "\nYou selected Meals.”
+
+
 .text
-.global main
+.globl main
 
 main:
-# Ask user for the initial money
+    # get initial money
+    la $a0, enterMoney  # load the address of enterMoney onto $a0
+    li $v0, 4  # value of 4 in $v0 indicates to print the string
+    syscall # executes the call
 
-# Without syscall
+    li $v0, 5 # value of 5 in $v0 indicates to read integer
+    syscall # execute call
+    move $t0, $v0 # stores that input in $t0 - $t0 stores init balance
 
-# enterMoney message
-addi $t6, $zero, 8196 #store input location in $t6
-la $t0, enterMoney # get location of enterMoney message in $t0
-j print_msg_1
+# while loop
+item_selection: 
+    # item selection message
+    la $a0, chooseItem
+    li $v0, 4 # value of 4 in $v0 indicates to print string
+    syscall
 
-print_msg_1:
-lb $t1, 0($t0) # load a byte from the string stored in $t0
-beq $t1, $zero, read_money # if you reached the end of the string, read money entered
-sw $t1, 4($t6) # store the byte in output location 8200
-add, $t0, $t0, 1 # move onto next memory address
-j print_msg_1 # loop
+    # get user choice
+    li $v0, 5 # values of 5 in $v0 indicates to read input
+    syscall
+    move $t1, $v0  # store user choice in $t1
 
-read_money:
-lw $t2, 0($t6) # load the input from memory location -$t2 holds the value of balance entered
-addi $t4, $zero, 8190 # choosing arbitrary memory location for $t4 to store
-sw $t2, 0($t4) # 8190 memory location will be used to store remaining balances 
-la $t0, chooseItem
-j print_msg_2
+    # check if user wants to exit
+    li $t2, -1 # load value -1 in $t2
+    beq $t1, $t2, exit_program # if input is -1, then go to exit_program label 
 
-print_msg_2:
-lb $t1, 0($t0) # load a byte from the string stored in $t0
-beq $t1, $zero, read_item # if you reached the end of the string, read item consumer chose
-sw $t1, 4($t6) # store the byte in output location 8200
-addi, $t0, 1 # move onto next memory address
-j print_msg_2 # loop
+    # Process choices
+    li $t2, 1 # load value 1 in $t2
+    beq $t1, $t2, water_case # if input 1, then go to water_case
 
-read_item:
-lw $t3, 0($t6) # load the input from memory location - $t3 holds value of the selected item
+    li $t2, 2 # load value 2 in $t2
+    beq $t1, $t2, snacks_case # if input is 2, then go to snacks_case
 
-la $t0, water_choice # load memory location of water_choice to $t0
-lb $t1, 0($t0) # load the byte that holds choice 1 onto $t1
-beq $t3, $t1, water_case
+    li $t2, 3 # load value 3 in $t2
+    beq $t1, $t2, sandwich_case # if input is 3, then go to sandwich_case
 
-la $t0, snacks_choice # load memory location of snacks_choice to $t0
-lb $t1, 0($t0) # load the byte that holds choice 2 onto $t1
-beq $t3, $t1, snacks_case
+    li $t2, 4
+    beq $t1, $t2, meal_case # if input is 4, then go meal_case
 
-la $t0, sandwich_choice # load memory location of sandwich_choice to $t0
-lb $t1, 0($t0) # load the byte that holds choice 3 onto $t1
-beq $t3, $t1, sandwich_case
-
-la $t0, meal_choice # load memory location of meal_choice to $t0
-lb $t1, 0($t0) # load the byte that holds choice 4 onto $t1
-beq $t3, $t1, meal_case
-
-la $t0, exit_choice # load memory location of exit_choice to $t0
-lb $t1, 0($t0) # load the byte that holds choice -1 onto $t1
-beq $t3, $t1, exit_case
-
-j read_item # let the consumer keep reading items
+    # Invalid choice, loop back
+    j item_selection # loop back
 
 water_case:
-la $t0, water_price # load water price memory address
-lw $t1, 0($t0) # load the value of water price
-lw $t2, 0($t4) # load the current balance in memory location
-bgt $t1, $t2, error_message # if the balance is less than the price of water, then go to error   message
-sub $t2, $t2, $t1 # if not, subtract water_price from balance
-sw $t2, 0($t4) # store remaining balance in memory location 8190
-j read_item
+    # selected item message
+    la $a0, selectedWater
+    li $v0, 4
+    syscall
+
+    lw $t2, water_price   # load water price
+    j process_purchase
 
 snacks_case:
-la $t0, snacks_price # load snacks price memory address
-lw $t1, 0($t0) # load value of snacks price
-lw $t2, 0($t4) # load the current balance from memory location
-bgt $t1, $t2, error_message # if the balance is less than the price of snacks, then go to error   message
-sub $t2, $t2, $t1 # if not, subtract snacks_price from balance
-sw $t2, 0($t4) # store remaining balance in memory location 8190
-j read_item
+    # selected item message
+    la $a0, selectedSnacks
+    li $v0, 4
+    syscall
+
+    lw $t2, snacks_price  # load snacks price
+    j process_purchase
 
 sandwich_case:
-la $t0, sandwich_price # load sandwich price memory address
-lw $t1, 0($t0) # load value of sandwich price
-lw $t2, 0($t4) # load the current balance from memory location
-bgt $t1, $t2, error_message # if the balance is less than the price of sandwich, then go to error   message
-sub $t2, $t2, $t1 # if not, subtract sandwich_price from balance
-sw $t2, 0($t4) # store remaining balance in memory location 8190
-j read_item
+    # selected item message
+    la $a0, selectedSandwich
+    li $v0, 4
+    syscall
+
+    lw $t2, sandwich_price # Load sandwich price
+    j process_purchase
 
 meal_case:
-la $t0, meal_price # load meal price memory address
-lw $t1, 0($t0) # load value of meal price
-lw $t2, 0($t4) # load the current balance from memory location
-bgt $t1, $t2, error_message # if the balance is less than the price of meal, then go to error   message
-sub $t2, $t2, $t1 # if not, subtract meal_price from balance
-sw $t2, 0($t4) # store remaining balance in memory location 8190
-j read_item
+    # selected item message
+    la $a0, selectedMeal
+    li $v0, 4
+    syscall
 
-exit_case:
-# enter exit message
-la $t0, exitMessage # load memory address of exitMessage
-j print_exit_msg
+    lw $t2, meal_price    # load meal price
 
-print_exit_msg:
-lb $t1, 0($t0) # load a byte from the string stored in $t0
-beq $t1, $zero, print_final_balance # if you reached the end of the string, print final balance
-sw $t1, 4($t6) # store the byte in output location 8200
-add, $t0, $t0, 1 # move onto next memory address
-j print_exit_msg # loop
+process_purchase:
+    # if the remaining balance is less than price, then go to insufficient_balance label
+    blt $t0, $t2, insufficient_balance
 
-error_message:
-# print error msg
-la $t0, minBalance # load memory address of minBalance
-j print_error_msg
+    # deduct price from balance
+    sub $t0, $t0, $t2 # if not, then subtract the price from current balance
+    j item_selection # loop back to item selection so user can keep picking multiple options
 
-print_error_msg:
-lb $t1, 0($t0) # load a byte from the string stored in $t0
-beq $t1, $zero, read_item # if you reached the end of the string, go to back to read_item
-sw $t1, 4($t6) # store the byte in output location 8200
-add, $t0, $t0, 1 # move onto next memory address
-j print_error_msg # loop
+insufficient_balance:
+    # insufficient balance message
+    la $a0, minBalance
+    li $v0, 4
+    syscall
+    j item_selection # loop back to item selection so user can keep picking multiple options
 
-print_final_balance:
-la $t0, balance # store location of balance message in $t0
-j print_balance_msg
+exit_program: # when you choose -1
+    # Display exit message
+    la $a0, exitMessage
+    li $v0, 4
+    syscall
 
-print_balance_msg:
-lb $t1, 0($t0) # load a byte from the string stored in $t0
-beq $t1, $zero, print_value # if you reached the end of the string, then print value of balance
-sw $t1, 4($t6) # store the byte in output location 8200
-add, $t0, $t0, 1 # move onto next memory address
-j print_balance_msg # loop
+    move $a0, $t0 # load balance into $a0 
+    li $v0, 1  #value of 1 in $v0 indicates to print an integer
+    syscall
 
-print_value:
-lw $t2, 0($t4) # load the remaining balance from memory location $t4 onto $t2
-sw $t2, 4($t6) # store the remaining balance in output location 8200
-j Done
-
-Done:
+    # Exit program
+    li $v0, 10  # value of 10 in $v0 indicates to exit program
+    syscall
